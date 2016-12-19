@@ -16,9 +16,9 @@ class Scraper():
 		self.write_strings = []
 		self.request = None
 		self.text = ''	
+		self.links = []
 
 	def scrape(self):
-		assert self.text, 'No text retrieved yet'
 		for s in self.actions:
 			next_func = None
 			to_act = True
@@ -30,8 +30,9 @@ class Scraper():
 		return None 
 
 class Action():
-	def __init__(self, fallback_action):
-		self.fallback_action = fallback_action
+	def __init__(self, fallback_action = None):
+		if fallback_action:
+			self.fallback_action = fallback_action
 
 	#User should not override as part of interface
 	def execute(self, scraper = None, act = True):
@@ -61,7 +62,11 @@ class Get_Action(Action):
                 	scraper.text = scraper.request.text
 		return act
 
-class Write_Action(Action):	
+class Write_Action(Action):
+	def __init__(self, file_name, fallback_action = None)
+		super().__init__(fallback_action)
+		self.file_name = file_name
+		
 	def act(self, scraper):
 		def act():
 			target_file = open(self.file_name, 'a')
@@ -70,3 +75,33 @@ class Write_Action(Action):
 			scraper.write_strings = []
 		return act
 
+class Find_Strings_Action(Action):
+	def __init__(self, regexes, fallback_action = None):
+		super().__init__(fallback_action)
+		if not isinstance(regexes, list):
+			self.regexes = [regexes]
+		else
+			self.regexes = regexes
+	def act(self, scraper):
+		def act():
+			for reg in self.regexes:
+				matches = re.findall(reg, scraper.text)
+				scraper.write_strings.extend(matches)
+		return act
+
+class Find_Links_Action(Find_Strings_Action):
+	def act(self, scraper):
+		def act():
+			for reg in self.regexes:
+				matches = re.findall(reg, scraper.text)
+				scraper.links.extend(matches)
+				scraper.write_strings.extend(matches)
+		return act
+
+class Next_Link_Action(Action):
+	def act(self, scraper):
+		def act():
+			scraper.site = scraper.links.pop(0)
+			scraper.scrape()
+		return act
+ 
