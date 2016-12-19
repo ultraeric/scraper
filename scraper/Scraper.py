@@ -38,7 +38,7 @@ class Action():
 
 	#User should not override as part of interface
 	def execute(self, scraper = None, act = True):
-		if !act or !scraper:
+		if not act or not scraper:
 			return self.fallback_action.execute(scraper)
 		return self.act(scraper)
 
