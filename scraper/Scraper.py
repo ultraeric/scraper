@@ -25,12 +25,13 @@ class Scraper():
 		assert self.text, 'No text retrieved yet'
 		for s in self.actions:
 			next_func = None
+			to_act = True
 			if queue.full():
-				s.execute(self, False)()
-				break
+				to_act = False
+				s.execute(self, to_act)()
 			else:
-				next_func = s.execute(self, True)
-		return none 
+				next_func = s.execute(self, to_act)
+		return None 
 
 class Action():
 	def __init__(self, fallback_action):
