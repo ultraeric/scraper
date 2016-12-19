@@ -14,12 +14,8 @@ class Scraper():
 		self.site = site
 		self.actions = actions
 		self.write_strings = []
-	
-	def get(self):
-		assert self.site, 'No site to scrape from specified'
-		self.request = requests.get(site)
-		self.text = self.request.text
-		return self.text
+		self.request = None
+		self.text = ''	
 
 	def scrape(self):
 		assert self.text, 'No text retrieved yet'
@@ -57,10 +53,15 @@ class Fallback_Action(Action):
 
 Action.fallback_action = Fallback_Action()
 
-class Write_Action(Action):
-	def __init__(self, fallback_action = Action.fallback_action):
-		self.fallback_action = fallback_action
-	
+class Get_Action(Action):
+	assert scraper.site, 'No site to scrape from specified'
+	def act(self, scraper):
+		def act():
+			scraper.request = requests.get(scraper.site)
+                	scraper.text = scraper.request.text
+		return act
+
+class Write_Action(Action):	
 	def act(self, scraper):
 		def act():
 			target_file = open(self.file_name, 'a')
