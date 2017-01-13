@@ -1,6 +1,6 @@
-import queue
+import asyncio
 
-class _queue(queue.Queue):
+class _queue(asyncio.Queue):
 	def __init__(self, max_size = 10000):
 		super().__init__(max_size)
 	
@@ -8,6 +8,7 @@ class _queue(queue.Queue):
 		while not self.empty():
 			action = self.get()
 			action()
+			
 
 action_queue = _queue() 
-queue = None
+asyncio = None

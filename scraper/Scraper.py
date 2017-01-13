@@ -16,8 +16,9 @@ class Scraper():
 	data that an Action uses and should have no functionality on its own.
 	"""
 
-	action_queue = None
-	def __init__(self, site = None, actions = None, queue = action_queue):
+	queue = None
+
+	def __init__(self, site = None, actions = [], queue = None):
 		"""Constructor.
 		
 		Args:
@@ -41,9 +42,11 @@ class Scraper():
 		#Recursive links to follow
 		self.links = []
 		#The XML tree of the HTML document
-		self.xml_tree = None		
-		#The job queue that this scraper will submit to
-		self.queue = queue
+		self.xml_tree = None	
+
+		if queue:	
+			#The job queue that this scraper will submit to
+			self.queue = queue
 		#The XML elements of the HTML document that are of interest
 		self.xml_elements = []
 
@@ -54,19 +57,16 @@ class Scraper():
 
 		to_act = True
 		for s in self.actions:
-			next_func = None
-	
 			#Runs fallback_action if queue is full.
-			if queue.full():
+			if self.queue.full():
 				to_act = False
 				s.run(self, to_act)()
 			else:
 				next_func = s.run(self, to_act)
-				queue.put(next_func)
-		return None 
+				self.queue.put(next_func)
+		return 
 
 
-print(Scraper.action_queue)
 
 class Action():
 	"""Interface that all Actions should extend. You should call Action.run()
