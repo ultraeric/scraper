@@ -12,12 +12,12 @@ for i in s:
 
 
 class Scraper():
-	"""Worker class that scrapes information from a site given a few Actions. 
-	Running the Actions returns a higher-order function that is submitted to 
-	the package-wide queue. Note that this class, Scraper acts as a data source
-	for Actions, and Actions act on the Scraper. Scraper should contain all the
-	data that an Action uses and should have no functionality on its own.
-	"""
+"""Worker class that scrapes information from a site given a few Actions. 
+Running the Actions returns a higher-order function that is submitted to 
+the package-wide queue. Note that this class, Scraper acts as a data source
+for Actions, and Actions act on the Scraper. Scraper should contain all the
+data that an Action uses and should have no functionality on its own.
+"""
 
 
 	def __init__(self, site = None, actions = None, queue = None):
@@ -71,11 +71,11 @@ class Scraper():
 
 
 class Action():
-	"""Interface that all Actions should extend. You should call Action.run()
-	to run the Action, and it will be run when the next available 
-	resource is up. To run it immediately, use Action.execute() to 
-	immediately run the Action. To extend the Action, override get_act().
-	"""
+"""Interface that all Actions should extend. You should call Action.run()
+to run the Action, and it will be run when the next available 
+resource is up. To run it immediately, use Action.execute() to 
+immediately run the Action. To extend the Action, override get_act().
+"""
 	
 
 	def __init__(self, fallback_action = None):
@@ -121,7 +121,10 @@ class Action():
 	"""Creates action. Higher-order function.
 	
 	Args:
-	  scraper <Scraper>: scraper that this Action acts on
+	  scraper <Scraper>: the Scraper that this Action acts on
+	
+	Returns: 
+	  function to submit to queue
 	"""
 
 		return
@@ -129,7 +132,7 @@ class Action():
 
 
 class Default_Fallback_Action(Action):
-	"""DO NOT OVERRIDE"""
+"""DO NOT OVERRIDE"""
 
 	
 	def __init__(self, fallback_action = None):
@@ -141,14 +144,22 @@ class Default_Fallback_Action(Action):
 	def get_act(self, scraper):
 		return lambda: None
 
+
+
 Action.fallback_action = Default_Fallback_Action()
 
 
 
-#HTTP GET request
-#TODO: implement authentication
 class Get_Action(Action):
+"""HTTP GET request from Scraper.site."""
+
+
 	def get_act(self, scraper):
+	"""Creates HTTP GET request. Higher order function.
+
+	Args: @Action
+	"""
+
 		def act():
 			if not scraper.site:
 				return
@@ -156,13 +167,29 @@ class Get_Action(Action):
 			scraper.text = scraper.request.text
 		return act
 
-#Writes all the strings currently in the Scraper's found_strings found through Find_Strings_Action
+
+
 class Write_Action(Action):
-	def __init__(self, file_name, regexes = None, fallback_action = None):
+"""Writes found_strings to a file."""
+
+
+	def __init__(self, file_name, fallback_action = None):
+	"""Constructor.
+
+	Args: 
+	  file_name <string>: name of file to write to
+	  fallback_action <Action>: @Action
+	"""
+	
 		super().__init__(fallback_action)
 		self.file_name = file_name
-		
+	
+	
 	def get_act(self, scraper):
+	"""Creates Write_Action. Higher-order function.
+	
+	Args: @Action
+	"""
 		def act():
 			target_file = open(self.file_name, 'a')
 			for s in scraper.found_strings:
@@ -170,23 +197,54 @@ class Write_Action(Action):
 			scraper.found_strings = []
 		return act
 
+
+
 class Find_Strings_Action(Action):
+"""Find Strings given a set of regular expressions to match to."""
+
+
 	def __init__(self, regexes, fallback_action = None):
+	"""Constructor.
+	
+	Args:
+	  regexes <list of regexes>: regular expressions to match
+	  fallback_action <Action>: @Action
+	"""
+
 		super().__init__(fallback_action)
 		if not isinstance(regexes, list):
 			self.regexes = [regexes]
 		else:
 			self.regexes = regexes
 
+
 	def get_act(self, scraper):
+	"""Creates Find_Strings_Action. Higher order function.
+
+	Args: @Action
+	"""
+
 		def act():
 			for reg in self.regexes:
 				matches = re.findall(reg, scraper.text)
 				scraper.found_strings.extend(matches)
 		return act
 
+
+
 class Find_Links_Action(Find_Strings_Action):
+"""Finds links given a set of regular expressions.
+
+Constructor: @Find_Strings_Action
+"""	
+
+
 	def get_act(self, scraper):
+	"""Creates Find_Links_Action. Higher order function.
+
+	Args: @Action
+	"""
+
 		def act():
 			for reg in self.regexes:
 				matches = re.findall(reg, scraper.text)
@@ -195,34 +253,69 @@ class Find_Links_Action(Find_Strings_Action):
 				scraper.found_strings.extend(matches)
 		return act
 
-class Scrape_Next_Link_Action(Action):
-	def get_act(self, scraper):
-		def act():
-			scraper.site = scraper.links.pop(0)
-			scraper.scrape()
-		return act
+
 
 class Parse_XML_Action(Action):
+"""Parses the HTML document into an XML tree."""
+
+
 	def get_act(self, scraper):
+	"""Creates Parse_XML_Action. Higher order function.
+	
+	Args: @Action
+	"""
+	
 		def act():
 			if not scraper.text:
 				Get_Action().execute(scraper)
+			if not scraper.text:
+				return
 			scraper.xml_tree = xml.etree.ElementTree.parse(scraper.text)
 		return act
 
+
+
 class Find_XML_Elements_Action(Action):
-	def __init__(self, tag_attribute_list = [], find_subelements = None, fallback_action = None)
+"""Find the XML elements from the XML tree in the scraper."""
+
+
+	def __init__(self, tag_attribute_list = [], find_subelements = False, fallback_action = None)
+	"""Constructor.
+
+	Args:
+	  tag_attribute_list <list of <pairs of <string, dictionary of <attribute, value>>>>: 
+		a list of HTML tags that satisfy one or more of the tag, attribute pairs
+	  find_subelements <boolean>: determines whether or not to find subelements of found XML elements
+	  fallback_action <Action>: @Action
+	"""	
+
 		super().__init__(self, fallback_action)
 		self.tags = [tag_attribute[0] for tag_attribute in tag_attribute_list]
 		self.attributes = [tag_attribute[1] for tag_attribute in tag_attribute_list]
 		self.find_subelements = find_subelements
 
+
 	def get_act(self, scraper):
+	"""Creates Find_XML_Elements_Action. Higher-order function
+
+	Args: @Action
+	"""
+
 		def act():
 			if not scraper.xml_tree:
 				Parse_XML_Action().execute(scraper)
+			if not scraper.xml_tree:
+				return
 			xml_elements = scraper.xml_elements[:]
+			
 			def find(element):
+			"""Helper function. Recursively traverses tree to find if the elements
+			satisfy the tag/attribute pairs.
+
+			Args:
+			  element <ElementTree>: the HTML element that is about to be examined
+			"""
+
 				if element.tag in self.tags or not self.tags:
 					element_index = self.tags.index(element.tag)
 					if all([(key is in element.attrib and element.attrib[key] == self.attributes[element_index][key]) 
