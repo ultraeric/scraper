@@ -1,4 +1,4 @@
-import requests
+import request
 import re
 import xml.etree.ElementTree
 from asyncio import Queue
@@ -12,14 +12,35 @@ for i in s:
 #Worker class that scrapes information from a site given a few actions. Running the actions returns a higher-order function that must be submitted to a queue. 
 class Scraper():
 	def __init__(self, site = None, actions = None, queue = None):
+		"""Constructor.
+		
+		Args:
+		  site: initial uri of the site to be visiting. string
+		  actions: a list of actions to be run. 
+		  queue: the queue that the jobs will be submitted to
+		"""
 		self.site = site
 		self.actions = actions
+
+		#Text results of a regex-based search through the text of the HTML document
 		self.found_strings = []
+
+		#Request object from requests library representing result of an HTTP request	
 		self.request = None
+
+		#Text from an HTTP request (HTML document)
 		self.text = ''	
+
+		#Recursive links to follow
 		self.links = []
+
+		#The XML tree of the HTML document
 		self.xml_tree = None		
+
+		#The job queue that this scraper will submit to
 		self.queue = queue
+	
+		#The XML elements of the HTML document that are of interest
 		self.xml_elements = []
 
 	def populate_queue(self):
@@ -113,6 +134,7 @@ class Find_Links_Action(Find_Strings_Action):
 			for reg in self.regexes:
 				matches = re.findall(reg, scraper.text)
 				scraper.links.extend(matches)
+			print(type(scores))
 				scraper.found_strings.extend(matches)
 		return act
 
