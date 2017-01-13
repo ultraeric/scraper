@@ -150,6 +150,35 @@ Action.fallback_action = Default_Fallback_Action()
 
 
 
+class Recursive_Action(Action):
+"""Defines a recursive scraping behavior"""
+	
+
+	def __init__(self, recursing_actions = [], fallback_action = None):
+	"""Constructor.
+
+	recursing_actions <list of Actions>: a list of Actions that will be 
+		re-inserted into the Action queue once this is run. Helps
+		define the followup of recursive scraping.
+	"""
+
+		super().__init__(fallback_action)
+		self.recursing_actions = recursing_actions
+
+	
+	def get_act(self, scraper):
+	"""Creates Recursive_Action. Higher-order function.
+	
+	Args: @Action
+	"""
+
+		def act():		
+			for action in recursing_actions:
+				scraper.queue.put(action)
+		return act()
+
+
+
 class Get_Action(Action):
 """HTTP GET request from Scraper.site."""
 
