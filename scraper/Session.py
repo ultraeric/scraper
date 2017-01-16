@@ -7,7 +7,7 @@ class _Action_Queue(asyncio.Queue):
 	"""Queue that the actions are submitted to, handles multithreading inherently. Singleton available in the variable 'action_queue'"""
 
 
-	def __init__(self, max_size = 10000, num_threads = 8):
+	def __init__(self, max_size = 10000, num_threads = 1):
 		"""Constructor.
 	
 		Args:
