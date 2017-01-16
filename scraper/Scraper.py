@@ -1,12 +1,14 @@
 import requests
 import re
 import xml.etree.ElementTree
+import threading
+import asyncio
 
-r = requests.get('https://www.google.com/finance')
-regex = r'(?:rel=nofollow\s*id=n-hp-\s*>)(.*)<\/a'
-s = re.findall(regex, r.text)
-for i in s:
-	print(i)
+# r = requests.get('https://www.google.com/finance')
+#regex = r'(?:rel=nofollow\s*id=n-hp-\s*>)(.*)<\/a'
+#s = re.findall(regex, r.text)
+#for i in s:
+#	print(i)
 
 class Scraper():
 	"""Worker class that scrapes information from a site given a few Actions. 
@@ -27,7 +29,10 @@ class Scraper():
 		  queue <Session.queue>: the queue that the jobs will be submitted to, 
 			   		   which lives in the package singleton.
 		"""
-
+		
+		self.queue.tracked_scrapers.append(self)
+	
+		self.lock = threading.Lock()
 		#Site to scrape on
 		self.site = site
 		#Initial actions
@@ -56,14 +61,14 @@ class Scraper():
 		"""
 
 		to_act = True
+
 		for s in self.actions:
 			#Runs fallback_action if queue is full.
 			if self.queue.full():
 				to_act = False
-				s.run(self, to_act)()
+				s.run(self, to_act)
 			else:
-				next_func = s.run(self, to_act)
-				self.queue.put(next_func)
+				s.run(self, to_act)
 		return 
 
 
@@ -98,8 +103,10 @@ class Action():
 		Returns:
 		  @get_act(scraper)
 		"""
-
-		return self.get_act(scraper)()
+		scraper.lock.acquire()
+		return_val = self.get_act(scraper)()
+		scraper.lock.release()
+		return return_val
 
 
 	def run(self, scraper = None, act = True):
@@ -111,9 +118,14 @@ class Action():
 		"""
 
 		if not act or not scraper or scraper.queue.full():
-			return self.fallback_action.run(scraper)()
-		scraper.queue.put(self.get_act(scraper))
-
+			return self.fallback_action.execute(scraper)
+	
+		sub_act = self.get_act(scraper)
+		def act():
+			scraper.lock.acquire()
+			sub_act()
+			scraper.lock.release()
+		scraper.queue.put_nowait(act)
 
 	def get_act(self, scraper):
 		"""Creates action. Higher-order function.
@@ -276,7 +288,6 @@ class Find_Links_Action(Find_Strings_Action):
 			for reg in self.regexes:
 				matches = re.findall(reg, scraper.text)
 				scraper.links.extend(matches)
-			print(type(scores))
 			scraper.found_strings.extend(matches)
 		return act
 
