@@ -15,10 +15,10 @@
 <p>This class's instances act on a Scraper. To run an action immediately, you can use <code>Action.execute(self)</code>. To spawn an action that attaches to the queue and runs when the resources are available, use <code>Action.run(self)</code>. Running the latter will attach an action method to the Session queue which will run when an available thread can handle it.</p>
 <p>To create custom actions, extend the Action class and override the <code>Action.get_act(self, scraper)</code> method. This should return a higher-order function that will be run and act on the information stored in the Scraper. It is possible to chain together Actions by creating, in the higher-order function, sub-actions and using <code>Action.execute(scraper)</code> to immediately run the action, thereby stringing together functionality and consolidating it into a single Action.</p>
 <h2>Examples</h2>
-<code>import scraper <br>
+```import scraper <br>
 queue = scraper.Session.action_queue<br>
 get_action = scraper.Scraper.Get_Action()<br>
 scraper1 = scraper.Scraper.Scraper(site = 'https://www.google.com/', actions = [get_action])<br>
 queue.populate_queue()<br>
 queue.run()
-</code>
+```
