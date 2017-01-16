@@ -1,3 +1,3 @@
-#!/usr/bin/env/bash
+#!/usr/bin/envbash
 
 python3 -m pip install requests
